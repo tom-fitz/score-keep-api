@@ -7,18 +7,16 @@ import (
 )
 
 type Handler struct {
-	logger *log.Logger
+	logger  *log.Logger
+	version int
 }
 
-func NewHandler(logger *log.Logger) *Handler {
-	return &Handler{logger}
+func NewHandler(logger *log.Logger, version int) *Handler {
+	return &Handler{logger, version}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.logger.Printf("Method: %s, Path: %s", r.Method, r.URL.Path)
-	w.Header().Set("Access-Control-Allow-Origin", "*") // Allow requests from any origin
-	w.Header().Set("Access-Control-Allow-Methods", "POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	switch r.Method {
 	case http.MethodGet:
 		h.importStatus(w, r)

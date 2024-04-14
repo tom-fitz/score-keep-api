@@ -36,10 +36,8 @@ func main() {
 
 	addr := fmt.Sprintf(":%d", cfg.port)
 
-	// Create handlers for each microservice
-	importHandler := imports.NewHandler(app.logger)
+	importHandler := imports.NewHandler(app.logger, 1)
 
-	// Register routes for each microservice
 	http.Handle("/v1/import/", addCorsHeaders(importHandler))
 
 	srv := &http.Server{
@@ -57,12 +55,11 @@ func main() {
 
 func addCorsHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*") // Adjust origin as needed
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s, %s, %s", http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions))
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		// Handle preflight requests
-		if r.Method == "OPTIONS" {
+		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
