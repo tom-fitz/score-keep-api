@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/tom-fitz/score-keep-api/imports"
+	"github.com/tom-fitz/score-keep-api/league"
 	"log"
 	"net/http"
 	"os"
@@ -47,34 +49,24 @@ func main() {
 
 	addr := fmt.Sprintf(":%d", cfg.port)
 
-	importHandler := imports.NewHandler(app.logger, 1, db)
+	router := mux.NewRouter()
 
-	http.Handle("/v1/import/", addCorsHeaders(importHandler))
+	importHandler := imports.NewHandler(app.logger, 1, db)
+	importHandler.RegisterRoutes(router)
+
+	leagueHandler := league.NewHandler(app.logger, 1, db)
+	leagueHandler.RegisterRoutes(router)
 
 	srv := &http.Server{
 		Addr:         addr,
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
+		Handler:      router,
 	}
 
 	app.logger.Printf("Starting %s server at %s", cfg.env, addr)
 
 	err := srv.ListenAndServe()
 	app.logger.Fatal(err)
-}
-
-func addCorsHeaders(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s, %s, %s", http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions))
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
 }

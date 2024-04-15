@@ -14,19 +14,12 @@ type Handler struct {
 }
 
 func NewHandler(logger *log.Logger, version int, db *sql.DB) *Handler {
-	return &Handler{logger, version, db}
-}
-
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.logger.Printf("Method: %s, Path: %s", r.Method, r.URL.Path)
-	switch r.Method {
-	case http.MethodGet:
-		h.importStatus(w, r)
-	case http.MethodPost:
-		h.importLeagues(w, r)
-	default:
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+	h := &Handler{
+		logger:  logger,
+		version: version,
+		db:      db,
 	}
+	return h
 }
 
 func (h *Handler) importStatus(w http.ResponseWriter, r *http.Request) {

@@ -10,21 +10,12 @@ import (
 func (h *Handler) importLeagues(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	err := r.ParseMultipartForm(10 << 20) // Set max memory for file uploads (10 MB)
+	// Set max memory for file uploads (10 MB)
+	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("ParseMultipartForm: %v", err.Error()), http.StatusInternalServerError)
 		return
 	}
-
-	//jsonData := r.FormValue("json")
-	//var requestBody map[string]interface{}
-	//err = json.Unmarshal([]byte(jsonData), &requestBody)
-	//if err != nil {
-	//	http.Error(w, "Invalid JSON data", http.StatusBadRequest)
-	//	return
-	//}
-	//
-	//h.logger.Printf("Received POST request with JSON body: %v", requestBody)
 
 	teamsFile, _, err := r.FormFile("teams")
 	if err != nil {

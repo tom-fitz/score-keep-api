@@ -2,4 +2,7 @@ module github.com/tom-fitz/score-keep-api
 
 go 1.16
 
-require github.com/lib/pq v1.10.9 // indirect
+require (
+	github.com/gorilla/mux v1.8.1
+	github.com/lib/pq v1.10.9
+)
