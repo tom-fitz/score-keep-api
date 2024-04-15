@@ -1,6 +1,7 @@
 package imports
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -9,10 +10,11 @@ import (
 type Handler struct {
 	logger  *log.Logger
 	version int
+	db      *sql.DB
 }
 
-func NewHandler(logger *log.Logger, version int) *Handler {
-	return &Handler{logger, version}
+func NewHandler(logger *log.Logger, version int, db *sql.DB) *Handler {
+	return &Handler{logger, version, db}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

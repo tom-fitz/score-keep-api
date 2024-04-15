@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"github.com/tom-fitz/score-keep-api/imports"
@@ -8,11 +9,14 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 type config struct {
-	port int
-	env  string
+	port   int
+	env    string
+	dbConn string
 }
 
 type application struct {
@@ -25,7 +29,14 @@ func main() {
 
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "dev", "environment (dev|prod)")
+	flag.StringVar(&cfg.dbConn, "db-conn", "postgres://admin:admin@localhost:5432/score_keep_db?sslmode=disable", "PostgreSQL database DSN")
 	flag.Parse()
+
+	db, dbErr := sql.Open("postgres", cfg.dbConn)
+	if dbErr != nil {
+		log.Fatal("could not connect to database:", dbErr)
+	}
+	defer db.Close()
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
@@ -36,7 +47,7 @@ func main() {
 
 	addr := fmt.Sprintf(":%d", cfg.port)
 
-	importHandler := imports.NewHandler(app.logger, 1)
+	importHandler := imports.NewHandler(app.logger, 1, db)
 
 	http.Handle("/v1/import/", addCorsHeaders(importHandler))
 
