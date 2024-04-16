@@ -3,12 +3,24 @@ package imports
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 )
 
 func (h *Handler) importLeagues(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+	if id == "" {
+		http.Error(w, "league id required", http.StatusBadRequest)
+	}
+
+	if err := validateLeague(id, h.db); err != nil {
+		http.Error(w, fmt.Sprintf("error validating league: %v", err), http.StatusBadRequest)
+		return
+	}
 
 	// Set max memory for file uploads (10 MB)
 	err := r.ParseMultipartForm(10 << 20)
@@ -43,21 +55,17 @@ func (h *Handler) importLeagues(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.Printf("players: %v", players)
-	h.logger.Printf("teams: %v", teams)
+	if err := InsertTeamData(h.db, teams); err != nil {
+		http.Error(w, fmt.Sprintf("InsertTeamData: %v", err), http.StatusInternalServerError)
+		return
+	}
+	if err := InsertPlayerData(h.db, players); err != nil {
+		http.Error(w, fmt.Sprintf("InsertPlayerData: %v", err), http.StatusInternalServerError)
+		return
+	}
 
-	//resp := map[string]string{
-	//	"status": "ok",
-	//	"method": "post",
-	//}
-	//bytes, err := json.Marshal(resp)
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	//w.Write(bytes)
 }
 
 func parseTeamsCSV(file io.Reader) ([]map[string]string, error) {

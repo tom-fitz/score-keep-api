@@ -6,7 +6,7 @@ import (
 )
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/v1/league/import", h.importLeagues).Methods(http.MethodPost)
+	router.HandleFunc("/v1/league/{id}/import", h.importLeagues).Methods(http.MethodPost)
 	router.HandleFunc("/import/healthcheck", h.healthcheck).Methods(http.MethodGet)
 }
 
