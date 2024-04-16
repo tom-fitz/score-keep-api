@@ -20,15 +20,56 @@ func validateLeague(id string, db *sql.DB) error {
 }
 
 // InsertPlayerData inserts player data into the database
-func InsertPlayerData(db *sql.DB, players []map[string]string) error {
-	for _, player := range players {
-		email := player["email"]
-		firstName := player["firstName"]
-		lastName := player["lastName"]
-		level := player["level"]
-		phone := player["phone"]
-		teamNames := player["teamNames"]
-		usaNum := player["usaNum"]
+func InsertPlayerData(db *sql.DB, players []Player) error {
+	for _, p := range players {
+		email := p.email
+		firstName := p.firstName
+		lastName := p.lastName
+		level := p.level
+		phone := p.phone
+		teamNames := p.teamNames
+		usaNum := p.usaNum
+
+		emailQuery := "SELECT COUNT(*) FROM score_keep_db.public.players WHERE email = $1"
+		var existingPlayer *Player
+		err := db.QueryRow(emailQuery, p.email).Scan(&existingPlayer)
+		if err != nil {
+			return fmt.Errorf("error finding player count: %w", err)
+		}
+
+		if existingPlayer != nil {
+			if existingPlayer.usaNum != p.usaNum {
+				updatePlayerQuery := `
+					UPDATE score_keep_db.public.players
+					SET usaNum = $1, firstName = $2, lastName = $3, level = $4, phone = $5
+					WHERE email = $6
+				`
+				_, err = db.Exec(updatePlayerQuery, usaNum, firstName, lastName, level, phone, email)
+				if err != nil {
+					return fmt.Errorf("error updating player: %w", err)
+				}
+
+				removeOldUSANumberQuery := `
+					DELETE FROM score_keep_db.public.player_team
+					WHERE usaNum = $1
+				`
+				_, err = db.Exec(removeOldUSANumberQuery, existingPlayer.usaNum)
+				if err != nil {
+					return fmt.Errorf("error removing old USA number: %w", err)
+				}
+
+				insertNewUSANumberQuery := `
+					INSERT INTO score_keep_db.public.player_team (usaNum, teamName)
+					VALUES ($1, $2)
+				`
+				for _, team := range teamNames {
+					_, err := db.Exec(insertNewUSANumberQuery, p.usaNum, team)
+					if err != nil {
+						return fmt.Errorf("error inserting new USA number with team: %w", err)
+					}
+				}
+			}
+		}
 
 		teams := strings.Split(teamNames, ", ")
 
