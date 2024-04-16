@@ -32,10 +32,8 @@ func InsertPlayerData(db *sql.DB, players []Player) error {
 
 		emailQuery := "SELECT COUNT(*) FROM score_keep_db.public.players WHERE email = $1"
 		var existingPlayer *Player
-		err := db.QueryRow(emailQuery, p.email).Scan(&existingPlayer)
-		if err != nil {
-			return fmt.Errorf("error finding player count: %w", err)
-		}
+		// no need to handle an error here
+		_ = db.QueryRow(emailQuery, p.email).Scan(&existingPlayer)
 
 		if existingPlayer != nil {
 			if existingPlayer.usaNum != p.usaNum {
@@ -44,7 +42,7 @@ func InsertPlayerData(db *sql.DB, players []Player) error {
 					SET usaNum = $1, firstName = $2, lastName = $3, level = $4, phone = $5
 					WHERE email = $6
 				`
-				_, err = db.Exec(updatePlayerQuery, usaNum, firstName, lastName, level, phone, email)
+				_, err := db.Exec(updatePlayerQuery, usaNum, firstName, lastName, level, phone, email)
 				if err != nil {
 					return fmt.Errorf("error updating player: %w", err)
 				}

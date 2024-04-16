@@ -75,6 +75,8 @@ func parseTeamsCSV(file io.Reader) ([]map[string]string, error) {
 
 	var teams []map[string]string
 
+	firstRow := true
+
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -82,6 +84,11 @@ func parseTeamsCSV(file io.Reader) ([]map[string]string, error) {
 		}
 		if err != nil {
 			return nil, fmt.Errorf("error reading teams.csv: %v", err)
+		}
+
+		if firstRow {
+			firstRow = false
+			continue
 		}
 
 		team := map[string]string{
@@ -95,12 +102,14 @@ func parseTeamsCSV(file io.Reader) ([]map[string]string, error) {
 	return teams, nil
 }
 
-func parsePlayersCSV(file io.Reader) ([]map[string]string, error) {
+func parsePlayersCSV(file io.Reader) ([]Player, error) {
 	reader := csv.NewReader(file)
 	reader.FieldsPerRecord = 7
 	reader.TrimLeadingSpace = true
 
-	var players []map[string]string
+	var players []Player
+
+	firstRow := true
 
 	for {
 		record, err := reader.Read()
@@ -111,14 +120,19 @@ func parsePlayersCSV(file io.Reader) ([]map[string]string, error) {
 			return nil, fmt.Errorf("error reading players.csv: %v", err)
 		}
 
-		player := map[string]string{
-			"firstName": record[0],
-			"lastName":  record[1],
-			"email":     record[2],
-			"phone":     record[3],
-			"usaNum":    record[4],
-			"level":     record[5],
-			"teamNames": record[6],
+		if firstRow {
+			firstRow = false
+			continue
+		}
+
+		player := Player{
+			firstName: record[0],
+			lastName:  record[1],
+			email:     record[2],
+			phone:     record[3],
+			usaNum:    record[4],
+			level:     record[5],
+			teamNames: record[6],
 		}
 		players = append(players, player)
 	}
