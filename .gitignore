@@ -10,7 +10,7 @@
 
 
 .idea
-gcp-creds.json
+gcp-creds*.json
 
 # Test binary, built with `go test -c`
 *.test

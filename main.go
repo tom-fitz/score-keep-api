@@ -56,16 +56,18 @@ func main() {
 		logger: logger,
 	}
 
-	jsonFile, err := os.Open("gcp-creds.json")
+	jsonFile, err := os.Open("gcp-creds-03.json")
 	if err != nil {
 		log.Fatalf("Unable to get credentials file: %v", err)
 	}
-	// Read the contents of the file into a byte slice
+
+	scopes := []string{calendar.CalendarScope, calendar.CalendarEventsScope}
+
 	gcpCredsBytes, err := ioutil.ReadAll(jsonFile)
 	if err != nil {
 		log.Fatalf("Unable to read credentials file: %v", err)
 	}
-	gcpCreds, err := google.CredentialsFromJSON(ctx, gcpCredsBytes, calendar.CalendarReadonlyScope)
+	gcpCreds, err := google.CredentialsFromJSON(ctx, gcpCredsBytes, scopes...)
 	if err != nil {
 		log.Fatalf("Unable to parse credentials: %v", err)
 	}
