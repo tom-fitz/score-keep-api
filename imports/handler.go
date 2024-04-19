@@ -4,18 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"log"
+	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
 type Handler struct {
 	ctx     context.Context
-	logger  *log.Logger
+	logger  *logrus.Logger
 	version int
 	db      *sql.DB
 }
 
-func NewHandler(ctx context.Context, logger *log.Logger, version int, db *sql.DB) *Handler {
+func NewHandler(ctx context.Context, logger *logrus.Logger, version int, db *sql.DB) *Handler {
 	h := &Handler{
 		ctx:     ctx,
 		logger:  logger,

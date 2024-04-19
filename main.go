@@ -3,91 +3,61 @@ package main
 import (
 	"context"
 	"database/sql"
-	"flag"
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
+
 	cal "github.com/tom-fitz/score-keep-api/calendar"
 	"github.com/tom-fitz/score-keep-api/imports"
 	"github.com/tom-fitz/score-keep-api/league"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/calendar/v3"
-	"google.golang.org/api/option"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"os"
-	"time"
 
 	_ "github.com/lib/pq"
 )
 
-type config struct {
-	port   int
-	env    string
-	dbConn string
-}
-
-type application struct {
-	config config
-	logger *log.Logger
-}
-
 func main() {
-	var cfg config
+	log := logrus.New()
+	log.SetFormatter(&logrus.JSONFormatter{})
 
-	flag.IntVar(&cfg.port, "port", 4000, "API server port")
-	flag.StringVar(&cfg.env, "env", "dev", "environment (dev|prod)")
-	flag.StringVar(&cfg.dbConn, "db-conn", "postgres://admin:admin@localhost:5432/score_keep_db?sslmode=disable", "PostgreSQL database DSN")
-	flag.Parse()
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "4000"
+	}
 
-	db, dbErr := sql.Open("postgres", cfg.dbConn)
+	dbConnStr := os.Getenv("DB_CONN")
+	if dbConnStr == "" {
+		dbConnStr = "postgres://admin:admin@localhost:5432/score_keep_db?sslmode=disable"
+	}
+
+	db, dbErr := sql.Open("postgres", dbConnStr)
 	if dbErr != nil {
-		log.Fatal("could not connect to database:", dbErr)
+		log.Fatalf("could not connect to database: %v", dbErr)
 	}
 	defer db.Close()
-
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	app := &application{
-		config: cfg,
-		logger: logger,
-	}
-
-	jsonFile, err := os.Open("gcp-creds-03.json")
+	gcpSvc, err := cal.NewCalendarService(ctx, "gcp-creds-03.json")
 	if err != nil {
-		log.Fatalf("Unable to get credentials file: %v", err)
+		log.Fatalf("could not create GCP Calendar service: %v", err)
 	}
 
-	scopes := []string{calendar.CalendarScope, calendar.CalendarEventsScope}
-
-	gcpCredsBytes, err := ioutil.ReadAll(jsonFile)
-	if err != nil {
-		log.Fatalf("Unable to read credentials file: %v", err)
-	}
-	gcpCreds, err := google.CredentialsFromJSON(ctx, gcpCredsBytes, scopes...)
-	if err != nil {
-		log.Fatalf("Unable to parse credentials: %v", err)
-	}
-
-	gcpSvc, err := calendar.NewService(ctx, option.WithCredentials(gcpCreds))
-	if err != nil {
-		log.Fatalf("Unable to create Calendar service: %v", err)
-	}
-
-	addr := fmt.Sprintf(":%d", cfg.port)
-
+	addr := fmt.Sprintf(":%s", port)
 	router := mux.NewRouter()
 
-	calendarHandler := cal.NewHandler(ctx, app.logger, 1, db, gcpSvc)
+	calendarHandler := cal.NewHandler(ctx, log, 1, db, gcpSvc)
 	calendarHandler.RegisterRoutes(router)
 
-	importHandler := imports.NewHandler(ctx, app.logger, 1, db)
+	importHandler := imports.NewHandler(ctx, log, 1, db)
 	importHandler.RegisterRoutes(router)
 
-	leagueHandler := league.NewHandler(ctx, app.logger, 1, db)
+	leagueHandler := league.NewHandler(ctx, log, 1, db)
 	leagueHandler.RegisterRoutes(router)
 
 	srv := &http.Server{
@@ -98,8 +68,24 @@ func main() {
 		Handler:      router,
 	}
 
-	app.logger.Printf("Starting %s server at %s", cfg.env, addr)
+	go func() {
+		log.Infof("Starting server at %s", addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
 
-	err = srv.ListenAndServe()
-	app.logger.Fatal(err)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	sig := <-sigChan
+	log.Infof("Received signal: %v, shutting down gracefully...", sig)
+
+	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Graceful shutdown failed: %v", err)
+	}
+	log.Info("Graceful shutdown completed")
 }
