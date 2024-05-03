@@ -26,3 +26,9 @@ go.work
 
 # web node modules
 web/node_modules
+
+# cluster deployment
+deploy/nomad.token
+deploy/variables.hcl
+deploy/terraform*
+deploy/.terraform*
