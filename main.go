@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
@@ -49,9 +50,13 @@ func main() {
 	}
 
 	addr := fmt.Sprintf(":%s", port)
-	//router := mux.NewRouter()
 
 	router := gin.Default()
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:3000"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
+	router.Use(cors.New(config))
 
 	calendarHandler := cal.NewHandler(ctx, log, 1, db, gcpSvc)
 	calendarHandler.RegisterRoutes(router)
