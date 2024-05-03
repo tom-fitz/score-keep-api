@@ -3,9 +3,11 @@ package calendar
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/gorilla/mux"
 	"google.golang.org/api/calendar/v3"
-	"net/http"
 )
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
@@ -13,39 +15,41 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 }
 
 func (h *Handler) listEvents(w http.ResponseWriter, r *http.Request) {
-	// ID of the calendar to access
 	calendarID := "tpfitz42@gmail.com"
+	currentYear := time.Now().Year()
+	startOfYear := time.Date(currentYear, 1, 1, 0, 0, 0, 0, time.UTC)
+	endOfYear := time.Date(currentYear, 12, 31, 23, 59, 59, 0, time.UTC)
+	timeMin := startOfYear.Format(time.RFC3339)
+	timeMax := endOfYear.Format(time.RFC3339)
 
-	// Fetch events from the specified calendar
-	events, err := h.gcp.Events.List(calendarID).Context(h.ctx).Do()
+	events, err := h.gcp.Events.List(calendarID).
+		TimeMin(timeMin).
+		TimeMax(timeMax).
+		Context(h.ctx).
+		Do()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to retrieve events: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Fetch a list of all calendars the service account has access to
 	calendars, err := h.gcp.CalendarList.List().Context(h.ctx).Do()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unable to retrieve calendar list: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Create a struct to hold both events and calendars data
 	type Response struct {
 		Events    []*calendar.Event             `json:"events"`
 		Calendars []*calendar.CalendarListEntry `json:"calendars"`
 	}
 
-	// Create the response object
 	resp := Response{
 		Events:    events.Items,
 		Calendars: calendars.Items,
 	}
 
-	// Set response headers
 	w.Header().Set("Content-Type", "application/json")
 
-	// Write response JSON to response
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error encoding response to JSON: %v", err), http.StatusInternalServerError)
