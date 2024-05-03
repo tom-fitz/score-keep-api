@@ -20,12 +20,29 @@ func (h *Handler) importLeagues(c *gin.Context) {
 		return
 	}
 
+	if c.Request.MultipartForm == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format. Expected multipart/form-data"})
+		return
+	}
+
 	// Set max memory for file uploads (10 MB)
 	err := c.Request.ParseMultipartForm(10 << 20)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("ParseMultipartForm: %v", err.Error())})
 		return
 	}
+
+	//if c.Request.Header.Get("Content-Type") != "multipart/form-data" {
+	//	c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid request format: %s. Expected multipart/form-data", c.Request.Header.Get("Content-Type"))})
+	//	return
+	//}
+	//
+	//// Set max memory for file uploads (10 MB)
+	//err := c.Request.ParseMultipartForm(10 << 20)
+	//if err != nil {
+	//	c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("ParseMultipartForm: %v", err.Error())})
+	//	return
+	//}
 
 	teamsFile, _, err := c.Request.FormFile("teams")
 	if err != nil {

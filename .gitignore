@@ -23,3 +23,6 @@ gcp-creds*.json
 
 # Go workspace file
 go.work
+
+# web node modules
+web/node_modules
