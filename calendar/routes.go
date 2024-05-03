@@ -1,20 +1,19 @@
 package calendar
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
 
-	"github.com/gorilla/mux"
 	"google.golang.org/api/calendar/v3"
 )
 
-func (h *Handler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/v1/calendar/events", h.listEvents).Methods(http.MethodGet)
+func (h *Handler) RegisterRoutes(router *gin.Engine) {
+	router.GET("/v1/calendar/events", h.listEvents)
 }
 
-func (h *Handler) listEvents(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) listEvents(c *gin.Context) {
 	calendarID := "tpfitz42@gmail.com"
 	currentYear := time.Now().Year()
 	startOfYear := time.Date(currentYear, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -28,13 +27,13 @@ func (h *Handler) listEvents(w http.ResponseWriter, r *http.Request) {
 		Context(h.ctx).
 		Do()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Unable to retrieve events: %v", err), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Unable to retrieve events: %v", err)})
 		return
 	}
 
 	calendars, err := h.gcp.CalendarList.List().Context(h.ctx).Do()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Unable to retrieve calendar list: %v", err), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Unable to retrieve calendar list: %v", err)})
 		return
 	}
 
@@ -48,11 +47,5 @@ func (h *Handler) listEvents(w http.ResponseWriter, r *http.Request) {
 		Calendars: calendars.Items,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
-	err = json.NewEncoder(w).Encode(resp)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error encoding response to JSON: %v", err), http.StatusInternalServerError)
-		return
-	}
+	c.JSON(http.StatusOK, resp)
 }

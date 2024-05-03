@@ -3,69 +3,66 @@ package imports
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 )
 
-func (h *Handler) importLeagues(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-
-	vars := mux.Vars(r)
-	id := vars["id"]
+func (h *Handler) importLeagues(c *gin.Context) {
+	id := c.Param("id")
 	if id == "" {
-		http.Error(w, "league id required", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "league id required"})
+		return
 	}
 
 	if err := validateLeague(id, h.db); err != nil {
-		http.Error(w, fmt.Sprintf("error validating league: %v", err), http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error validating league: %v", err)})
 		return
 	}
 
 	// Set max memory for file uploads (10 MB)
-	err := r.ParseMultipartForm(10 << 20)
+	err := c.Request.ParseMultipartForm(10 << 20)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("ParseMultipartForm: %v", err.Error()), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("ParseMultipartForm: %v", err.Error())})
 		return
 	}
 
-	teamsFile, _, err := r.FormFile("teams")
+	teamsFile, _, err := c.Request.FormFile("teams")
 	if err != nil {
-		http.Error(w, "teams.csv file not provided", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "teams.csv file not provided"})
 		return
 	}
 	defer teamsFile.Close()
 
 	teams, err := parseTeamsCSV(teamsFile)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("parseTeamsCSV: %v", err.Error()), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("parseTeamsCSV: %v", err.Error())})
 		return
 	}
 
-	playersFile, _, err := r.FormFile("players")
+	playersFile, _, err := c.Request.FormFile("players")
 	if err != nil {
-		http.Error(w, "players.csv file not provided", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "players.csv file not provided"})
 		return
 	}
 	defer playersFile.Close()
 
 	players, err := parsePlayersCSV(playersFile)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("parsePlayersCSV: %v", err.Error()), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("parsePlayersCSV: %v", err.Error())})
 		return
 	}
 
 	if err := InsertTeamData(h.db, teams); err != nil {
-		http.Error(w, fmt.Sprintf("InsertTeamData: %v", err), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("InsertTeamData: %v", err)})
 		return
 	}
 	if err := InsertPlayerData(h.db, players); err != nil {
-		http.Error(w, fmt.Sprintf("InsertPlayerData: %v", err), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("InsertPlayerData: %v", err)})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	c.JSON(http.StatusOK, gin.H{"message": "Import successful"})
 }
 
 func parseTeamsCSV(file io.Reader) ([]map[string]string, error) {

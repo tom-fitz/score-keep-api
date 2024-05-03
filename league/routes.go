@@ -1,10 +1,9 @@
 package league
 
 import (
-	"github.com/gorilla/mux"
-	"net/http"
+	"github.com/gin-gonic/gin"
 )
 
-func (h *Handler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/v1/league/create", h.createLeagues).Methods(http.MethodPost)
+func (h *Handler) RegisterRoutes(router *gin.Engine) {
+	router.POST("/v1/league/create", h.createLeagues)
 }

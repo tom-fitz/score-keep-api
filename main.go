@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
 	cal "github.com/tom-fitz/score-keep-api/calendar"
@@ -49,7 +49,9 @@ func main() {
 	}
 
 	addr := fmt.Sprintf(":%s", port)
-	router := mux.NewRouter()
+	//router := mux.NewRouter()
+
+	router := gin.Default()
 
 	calendarHandler := cal.NewHandler(ctx, log, 1, db, gcpSvc)
 	calendarHandler.RegisterRoutes(router)

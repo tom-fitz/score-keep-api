@@ -3,7 +3,7 @@ package imports
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
@@ -25,14 +25,10 @@ func NewHandler(ctx context.Context, logger *logrus.Logger, version int, db *sql
 	return h
 }
 
-func (h *Handler) importStatus(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) importStatus(c *gin.Context) {
 	resp := map[string]string{
 		"status": "ok",
 		"method": "get",
 	}
-	bytes, err := json.Marshal(resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-	w.Write(bytes)
+	c.JSON(http.StatusOK, resp)
 }

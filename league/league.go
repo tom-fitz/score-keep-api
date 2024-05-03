@@ -1,17 +1,17 @@
 package league
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-func (h *Handler) createLeagues(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) createLeagues(c *gin.Context) {
 	var requestBody []map[string]interface{}
 
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	err := c.BindJSON(&requestBody)
 	if err != nil {
-		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON data"})
 		return
 	}
 
@@ -21,11 +21,11 @@ func (h *Handler) createLeagues(w http.ResponseWriter, r *http.Request) {
 		var id int
 		err := h.db.QueryRow(query, league["name"], league["level"]).Scan(&id)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to insert data into database: %v", err), http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to insert data into database: %v", err)})
 			return
 		}
 		ids = append(ids, id)
 	}
 
-	json.NewEncoder(w).Encode(map[string][]int{"ids": ids})
+	c.JSON(http.StatusOK, gin.H{"ids": ids})
 }
