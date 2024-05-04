@@ -11,7 +11,7 @@ resource "google_compute_network" "hashistack" {
 resource "google_compute_firewall" "consul_nomad_ui_ingress" {
   name          = "${var.name}-ui-ingress"
   network       = google_compute_network.hashistack.name
-  source_ranges = [var.allowlist_ip]
+  source_ranges = var.allowlist_ip
 
   # Nomad
   allow {
@@ -24,12 +24,24 @@ resource "google_compute_firewall" "consul_nomad_ui_ingress" {
     protocol = "tcp"
     ports    = [8500]
   }
+
+  # Traefik HTTP
+  allow {
+    protocol = "tcp"
+    ports    = [80]
+  }
+
+  # Traefik HTTPS
+  allow {
+    protocol = "tcp"
+    ports    = [443]
+  }
 }
 
 resource "google_compute_firewall" "ssh_ingress" {
   name          = "${var.name}-ssh-ingress"
   network       = google_compute_network.hashistack.name
-  source_ranges = [var.allowlist_ip]
+  source_ranges = var.allowlist_ip
 
   # SSH
   allow {
@@ -61,16 +73,19 @@ resource "google_compute_firewall" "allow_all_internal" {
 resource "google_compute_firewall" "clients_ingress" {
   name          = "${var.name}-clients-ingress"
   network       = google_compute_network.hashistack.name
-  source_ranges = [var.allowlist_ip]
-  target_tags   = ["nomad-clients"]
+  source_ranges = var.allowlist_ip
+  target_tags   = ["nomad-clients","http-server","https-server","lb-health-check"]
 
-  # Add application ingress rules here
-  # These rules are applied only to the client nodes
-
-  # nginx example; replace with your application port
+  # Traefik HTTP
   allow {
     protocol = "tcp"
     ports    = [80]
+  }
+
+  # Traefik HTTPS
+  allow {
+    protocol = "tcp"
+    ports    = [443]
   }
 }
 

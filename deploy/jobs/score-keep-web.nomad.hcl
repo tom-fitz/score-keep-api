@@ -17,7 +17,10 @@ job "score-keep-web" {
 
       tags = [
         "traefik.enable=true",
-        "traefik.http.routers.score-keep-web.rule=Host(`scorekeepapp.com`)",
+        "traefik.http.routers.score-keep-web.rule=Host(`34.168.2.208`)",
+        "traefik.http.routers.score-keep-web.entrypoints=web,websecure",
+        "traefik.http.routers.score-keep-web.tls=true",
+        "traefik.http.routers.score-keep-web.tls.certresolver=myresolver",
       ]
     }
 
