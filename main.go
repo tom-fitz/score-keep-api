@@ -14,7 +14,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	cal "github.com/tom-fitz/score-keep-api/calendar"
 	"github.com/tom-fitz/score-keep-api/imports"
 	"github.com/tom-fitz/score-keep-api/league"
 
@@ -44,10 +43,10 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	gcpSvc, err := cal.NewCalendarService(ctx, "gcp-creds-03.json")
-	if err != nil {
-		log.Fatalf("could not create GCP Calendar service: %v", err)
-	}
+	//gcpSvc, err := cal.NewCalendarService(ctx, "gcp-creds.json")
+	//if err != nil {
+	//	log.Fatalf("could not create GCP Calendar service: %v", err)
+	//}
 
 	addr := fmt.Sprintf(":%s", port)
 
@@ -58,8 +57,8 @@ func main() {
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
 	router.Use(cors.New(config))
 
-	calendarHandler := cal.NewHandler(ctx, log, 1, db, gcpSvc)
-	calendarHandler.RegisterRoutes(router)
+	//calendarHandler := cal.NewHandler(ctx, log, 1, db, gcpSvc)
+	//calendarHandler.RegisterRoutes(router)
 
 	importHandler := imports.NewHandler(ctx, log, 1, db)
 	importHandler.RegisterRoutes(router)
