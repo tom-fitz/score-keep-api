@@ -13,6 +13,25 @@ import (
 	"testing"
 )
 
+func setupTestService() (*Handler, sqlmock.Sqlmock, *httptest.ResponseRecorder, *gin.Context, error) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	h := &Handler{db: db}
+
+	return h, mock, w, c, nil
+}
+
+func setupRouter(method string, url string, body *bytes.Buffer) *http.Request {
+	req, _ := http.NewRequest(method, url, body)
+	return req
+}
+
 func TestImportLeagues(t *testing.T) {
 	teamsFile, err := os.CreateTemp("", "teams.csv")
 	assert.NoError(t, err)
@@ -33,35 +52,77 @@ func TestImportLeagues(t *testing.T) {
 	writer.CreateFormFile("players", playersFile.Name())
 	writer.Close()
 
-	req, err := http.NewRequest("POST", "/leagues/1/import", body)
-	assert.NoError(t, err)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+	t.Run("League Id not found", func(t *testing.T) {
+		h, mock, w, c, err := setupTestService()
+		assert.NoError(t, err)
+		defer h.db.Close()
 
-	db, mock, err := sqlmock.New()
-	assert.NoError(t, err)
-	defer db.Close()
+		req := setupRouter("POST", "", body)
+		c.Request = req
 
-	mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM score_keep_db.public.leagues WHERE id = \\$1").
-		WithArgs("1").
-		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+		h.importLeagues(c)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		var response map[string]string
+		err = json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Contains(t, response["error"], "league id required")
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
 
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = req
-	c.Params = gin.Params{
-		{Key: "id", Value: "1"},
-	}
+	t.Run("League not found", func(t *testing.T) {
+		h, mock, w, c, err := setupTestService()
+		assert.NoError(t, err)
+		defer h.db.Close()
 
-	h := &Handler{db: db}
+		mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM score_keep_db.public.leagues WHERE id = \\$1").
+			WithArgs("1").
+			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 
-	h.importLeagues(c)
+		req := setupRouter("POST", "/leagues/1/import", body)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+		c.Request = req
+		c.Params = gin.Params{
+			{Key: "id", Value: "1"},
+		}
 
-	var response map[string]string
-	err = json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
-	assert.Equal(t, "Import successful", response["message"])
+		h.importLeagues(c)
 
-	assert.NoError(t, mock.ExpectationsWereMet())
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		var response map[string]string
+		err = json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Contains(t, response["error"], "league not found")
+
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("Import successful", func(t *testing.T) {
+		req, err := http.NewRequest("POST", "/leagues/1/import", body)
+		assert.NoError(t, err)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		h, mock, w, c, err := setupTestService()
+		assert.NoError(t, err)
+		defer h.db.Close()
+
+		mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM score_keep_db.public.leagues WHERE id = \\$1").
+			WithArgs("1").
+			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+
+		c.Request = req
+		c.Params = gin.Params{
+			{Key: "id", Value: "1"},
+		}
+
+		h.importLeagues(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response map[string]string
+		err = json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, "Import successful", response["message"])
+
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
 }
