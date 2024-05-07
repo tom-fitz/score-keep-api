@@ -1,0 +1,26 @@
+version: '3'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./:/app
+    depends_on:
+      - db
+    environment:
+      - PORT=4000
+      - DB_CONN=postgres://admin:admin@localhost:5432/score_keep_db?sslmode=disable
+
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./web:/app
+    depends_on:
+      - backend

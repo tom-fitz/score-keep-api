@@ -1,6 +1,6 @@
 SERVICES := imports
 
-.PHONY: test coverage
+.PHONY: test coverage local
 
 test:
 	@for service in $(SERVICES); do \
@@ -13,3 +13,6 @@ coverage:
 		echo "Generating coverage report for $$service..."; \
 		cd $$service && go test ./... -coverprofile=coverage.out && go tool cover -func=coverage.out && cd ..; \
 	done
+
+local:
+	docker-compose up -d
