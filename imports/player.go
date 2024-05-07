@@ -11,7 +11,7 @@ type Player struct {
 	teamNames string
 }
 
-type PlayImport struct {
+type PlayerImport struct {
 	Id        int      `json:"id"`
 	Email     string   `json:"email"`
 	FirstName string   `json:"firstName"`
