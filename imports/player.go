@@ -14,7 +14,7 @@ type Player struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	Phone     string `json:"phone"`
-	UsaNum    string `json:"useNum"`
+	Usanum    string `json:"usanum"`
 	Level     string `json:"level"`
 	TeamNames string `json:"teamNames"`
 }
@@ -49,6 +49,7 @@ func (h *Service) ImportPlayers(c *gin.Context) {
 		return
 	}
 
+	c.JSON(http.StatusOK, gin.H{"message": "Players imported successfully."})
 }
 
 func parsePlayersCSV(file io.Reader) ([]Player, error) {
@@ -91,7 +92,7 @@ func parsePlayerRecord(record []string) (Player, error) {
 		LastName:  record[1],
 		Email:     record[2],
 		Phone:     record[3],
-		UsaNum:    record[4],
+		Usanum:    record[4],
 		Level:     record[5],
 		TeamNames: record[6],
 	}

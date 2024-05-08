@@ -113,7 +113,7 @@ func TestImportPlayers(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
 		mock.ExpectBegin()
-		mock.ExpectExec("INSERT INTO score_keep_db.public.players \\(firstName, lastName, email, phone, usaNum, level, teamNames\\) VALUES \\(\\$1, \\$2, \\$3, \\$4, \\$5, \\$6, \\$7\\)").
+		mock.ExpectExec("INSERT INTO score_keep_db.public.players \\(firstName, lastName, email, phone, usanum, level, teamNames\\) VALUES \\(\\$1, \\$2, \\$3, \\$4, \\$5, \\$6, \\$7\\)").
 			WithArgs("test", "name", "test@test.com", "111111111", "098SADF089", "3", "test, one, two").
 			WillReturnError(fmt.Errorf("insert player data error"))
 		mock.ExpectCommit()
@@ -144,6 +144,6 @@ func TestImportPlayers(t *testing.T) {
 		var response map[string]string
 		err = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
-		assert.Contains(t, response["error"], "insert player data")
+		assert.Contains(t, response["error"], "InsertPlayerData")
 	})
 }

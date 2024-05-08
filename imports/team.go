@@ -44,7 +44,7 @@ func (h *Service) ImportTeams(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Teams imported successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Teams imported successfully."})
 }
 
 func parseTeamsCSV(file io.Reader) ([]Team, error) {
