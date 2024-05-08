@@ -8,7 +8,7 @@ import (
 func (h *Service) RegisterRoutes(router *gin.Engine) {
 	v := fmt.Sprintf("/v%d", h.version)
 	router.POST(fmt.Sprintf("%s/league/:leagueId/teams/import", v), h.ImportTeams)
-	router.POST(fmt.Sprintf("%s/league/:leagueId/players/import", v))
+	router.POST(fmt.Sprintf("%s/league/:leagueId/players/import", v), h.ImportPlayers)
 	router.GET("/import/healthcheck", h.healthcheck)
 }
 
