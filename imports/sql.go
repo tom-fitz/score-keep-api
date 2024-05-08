@@ -22,21 +22,21 @@ func validateLeague(id string, db *sql.DB) error {
 // InsertPlayerData inserts player data into the database
 func InsertPlayerData(db *sql.DB, players []Player) error {
 	for _, p := range players {
-		email := p.email
-		firstName := p.firstName
-		lastName := p.lastName
-		level := p.level
-		phone := p.phone
-		teamNames := p.teamNames
-		usaNum := p.usaNum
+		email := p.Email
+		firstName := p.FirstName
+		lastName := p.LastName
+		level := p.Level
+		phone := p.Phone
+		teamNames := p.TeamNames
+		usaNum := p.UsaNum
 
 		emailQuery := "SELECT COUNT(*) FROM score_keep_db.public.players WHERE email = $1"
 		var existingPlayer *Player
 		// no need to handle an error here
-		_ = db.QueryRow(emailQuery, p.email).Scan(&existingPlayer)
+		_ = db.QueryRow(emailQuery, p.Email).Scan(&existingPlayer)
 
 		if existingPlayer != nil {
-			if existingPlayer.usaNum != p.usaNum {
+			if existingPlayer.UsaNum != p.UsaNum {
 				updatePlayerQuery := `
 					UPDATE score_keep_db.public.players
 					SET usaNum = $1, firstName = $2, lastName = $3, level = $4, phone = $5
@@ -51,7 +51,7 @@ func InsertPlayerData(db *sql.DB, players []Player) error {
 					DELETE FROM score_keep_db.public.player_team
 					WHERE usaNum = $1
 				`
-				_, err = db.Exec(removeOldUSANumberQuery, existingPlayer.usaNum)
+				_, err = db.Exec(removeOldUSANumberQuery, existingPlayer.UsaNum)
 				if err != nil {
 					return fmt.Errorf("error removing old USA number: %w", err)
 				}
@@ -61,7 +61,7 @@ func InsertPlayerData(db *sql.DB, players []Player) error {
 					VALUES ($1, $2)
 				`
 				for _, team := range teamNames {
-					_, err := db.Exec(insertNewUSANumberQuery, p.usaNum, team)
+					_, err := db.Exec(insertNewUSANumberQuery, p.UsaNum, team)
 					if err != nil {
 						return fmt.Errorf("error inserting new USA number with team: %w", err)
 					}
@@ -101,11 +101,11 @@ func InsertPlayerData(db *sql.DB, players []Player) error {
 }
 
 // InsertTeamData inserts team data into the database
-func InsertTeamData(db *sql.DB, teams []map[string]string) error {
+func InsertTeamData(db *sql.DB, teams []Team) error {
 	for _, team := range teams {
-		name := team["name"]
-		captain := team["captain"]
-		firstYear := team["firstYear"]
+		name := team.Name
+		captain := team.Captain
+		firstYear := team.FirstYear
 
 		tx, err := db.Begin()
 		if err != nil {
