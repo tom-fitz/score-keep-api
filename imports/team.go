@@ -14,7 +14,7 @@ type Team struct {
 	FirstYear string `json:"firstYear"`
 }
 
-func (h *Handler) ImportTeams(c *gin.Context) {
+func (h *Service) ImportTeams(c *gin.Context) {
 	lid := c.Param("leagueId")
 	if lid == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "league id required"})
@@ -80,10 +80,7 @@ func parseTeamsCSV(file io.Reader) ([]Team, error) {
 }
 
 func parseTeamRecord(record []string) (Team, error) {
-	if len(record) != 3 {
-		return Team{}, fmt.Errorf("invalid team record: %v", record)
-	}
-
+	// TODO: add in team validation
 	team := Team{
 		Name:      record[0],
 		Captain:   record[1],

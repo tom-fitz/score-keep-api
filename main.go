@@ -57,10 +57,10 @@ func main() {
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
 	router.Use(cors.New(config))
 
-	//calendarHandler := cal.NewHandler(ctx, log, 1, db, gcpSvc)
+	//calendarHandler := cal.NewService(ctx, log, 1, db, gcpSvc)
 	//calendarHandler.RegisterRoutes(router)
 
-	importHandler := imports.NewHandler(ctx, log, 1, db)
+	importHandler := imports.NewService(ctx, log, 1, db)
 	importHandler.RegisterRoutes(router)
 
 	leagueHandler := league.NewHandler(ctx, log, 1, db)

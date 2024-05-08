@@ -3,57 +3,35 @@ package imports
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"mime/multipart"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"testing"
 )
 
-func setupTestService() (*Handler, sqlmock.Sqlmock, *httptest.ResponseRecorder, *gin.Context, error) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	h := &Handler{db: db}
-	return h, mock, w, c, nil
-}
-
-func setupTestRouter(method string, url string, body *bytes.Buffer) *http.Request {
-	req, _ := http.NewRequest(method, url, body)
-	return req
-}
-
-func createTestFiles(t *testing.T) (string, string) {
-	teamsFile, err := os.CreateTemp("", "teams.csv")
-	assert.NoError(t, err)
-	teamsFile.WriteString("Team1,Captain1,2021\nTeam2,Captain2,2022\n")
-	teamsFile.Close()
-
+func createTestPlayerFile(t *testing.T) string {
 	playersFile, err := os.CreateTemp("", "players.csv")
 	assert.NoError(t, err)
 	playersFile.WriteString("John,Doe,john@example.com,1234567890,123,A,Team1\nJane,Smith,jane@example.com,9876543210,456,B,Team2\n")
 	playersFile.Close()
 
-	return teamsFile.Name(), playersFile.Name()
+	return playersFile.Name()
 }
 
-func TestImportLeagues(t *testing.T) {
-	teamsFilename, playersFilename := createTestFiles(t)
+func TestImportPlayers(t *testing.T) {
+	playersFilename := createTestPlayerFile(t)
 	defer func() {
-		os.Remove(teamsFilename)
 		os.Remove(playersFilename)
 	}()
 
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
 	writer.WriteField("id", "1")
-	writer.CreateFormFile("teams", teamsFilename)
 	writer.CreateFormFile("players", playersFilename)
 	writer.Close()
 
@@ -65,7 +43,7 @@ func TestImportLeagues(t *testing.T) {
 		req := setupTestRouter("POST", "", body)
 		c.Request = req
 
-		h.importLeagues(c)
+		h.ImportPlayers(c)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		var response map[string]string
 		err = json.Unmarshal(w.Body.Bytes(), &response)
@@ -82,14 +60,14 @@ func TestImportLeagues(t *testing.T) {
 			WithArgs("1").
 			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 
-		req := setupTestRouter("POST", "/league/1/import", body)
+		req := setupTestRouter("POST", "/v1/league/1/players/import", body)
 
 		c.Request = req
 		c.Params = gin.Params{
-			{Key: "id", Value: "1"},
+			{Key: "leagueId", Value: "1"},
 		}
 
-		h.importLeagues(c)
+		h.ImportPlayers(c)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
@@ -99,7 +77,7 @@ func TestImportLeagues(t *testing.T) {
 		assert.Contains(t, response["error"], "league not found")
 	})
 
-	t.Run("Teams file read error", func(t *testing.T) {
+	t.Run("Players file read error", func(t *testing.T) {
 		h, mock, w, c, err := setupTestService()
 		assert.NoError(t, err)
 		defer h.db.Close()
@@ -109,34 +87,23 @@ func TestImportLeagues(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
 		body := new(bytes.Buffer)
-		writer := multipart.NewWriter(body)
-		writer.WriteField("id", "1")
-		writer.CreateFormFile("teams", "nonexistent_file.csv")
-		writer.CreateFormFile("players", playersFilename)
-		writer.Close()
-
-		req := setupTestRouter("POST", "/leagues/1/import", body)
-		req.Header.Set("Content-Type", writer.FormDataContentType())
-
+		req := setupTestRouter("POST", "/v1/league/1/players/import", body)
 		c.Request = req
 		c.Params = gin.Params{
-			{Key: "id", Value: "1"},
+			{Key: "leagueId", Value: "1"},
 		}
 
-		h.importLeagues(c)
+		h.ImportPlayers(c)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
 		var response map[string]string
 		err = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
-		assert.Contains(t, response["error"], "teams.csv file not provided")
+		assert.Contains(t, response["error"], "players.csv file not provided")
 	})
 
-	t.Run("Import successful", func(t *testing.T) {
-		req, err := http.NewRequest("POST", "/leagues/1/import", body)
-		assert.NoError(t, err)
-		req.Header.Set("Content-Type", writer.FormDataContentType())
+	t.Run("InsertPlayerData error", func(t *testing.T) {
 		h, mock, w, c, err := setupTestService()
 		assert.NoError(t, err)
 		defer h.db.Close()
@@ -145,18 +112,38 @@ func TestImportLeagues(t *testing.T) {
 			WithArgs("1").
 			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
+		mock.ExpectBegin()
+		mock.ExpectExec("INSERT INTO score_keep_db.public.players \\(firstName, lastName, email, phone, usaNum, level, teamNames\\) VALUES \\(\\$1, \\$2, \\$3, \\$4, \\$5, \\$6, \\$7\\)").
+			WithArgs("test", "name", "test@test.com", "111111111", "098SADF089", "3", "test, one, two").
+			WillReturnError(fmt.Errorf("insert player data error"))
+		mock.ExpectCommit()
+
+		playersFile, err := os.Open(playersFilename)
+		assert.NoError(t, err)
+		defer playersFile.Close()
+
+		body := new(bytes.Buffer)
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile("players", playersFilename)
+		assert.NoError(t, err)
+		_, err = io.Copy(part, playersFile)
+		assert.NoError(t, err)
+		writer.Close()
+
+		req := setupTestRouter("POST", "/v1/league/1/players/import", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
 		c.Request = req
 		c.Params = gin.Params{
-			{Key: "id", Value: "1"},
+			{Key: "leagueId", Value: "1"},
 		}
 
-		h.importLeagues(c)
+		h.ImportPlayers(c)
 
-		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
 
 		var response map[string]string
 		err = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
-		assert.Equal(t, "Import successful", response["message"])
+		assert.Contains(t, response["error"], "insert player data")
 	})
 }
