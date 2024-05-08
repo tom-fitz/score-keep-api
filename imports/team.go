@@ -9,6 +9,7 @@ import (
 )
 
 type Team struct {
+	Id        int    `json:"id"`
 	Name      string `json:"name"`
 	Captain   string `json:"captain"`
 	FirstYear string `json:"firstYear"`
@@ -21,7 +22,8 @@ func (h *Service) ImportTeams(c *gin.Context) {
 		return
 	}
 
-	if err := validateLeague(lid, h.db); err != nil {
+	league, err := validateLeague(lid, h.db)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error validating league: %v", err)})
 		return
 	}
@@ -39,7 +41,7 @@ func (h *Service) ImportTeams(c *gin.Context) {
 		return
 	}
 
-	if err := InsertTeamData(h.db, teams); err != nil {
+	if err := InsertTeamData(h.db, teams, league); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("InsertTeamData: %v", err)})
 		return
 	}

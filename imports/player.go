@@ -26,7 +26,8 @@ func (h *Service) ImportPlayers(c *gin.Context) {
 		return
 	}
 
-	if err := validateLeague(lid, h.db); err != nil {
+	_, err := validateLeague(lid, h.db)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error validating league: %v", err)})
 		return
 	}

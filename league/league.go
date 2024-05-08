@@ -78,3 +78,21 @@ func (h *Handler) getLeagueById(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"league": league})
 }
+
+func (h *Handler) getTeamsByLeagueId(c *gin.Context) {
+	lid := c.Param("id")
+	if lid == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "league id required"})
+		return
+	}
+
+	//league, err := validateLeague(lid, h.db)
+	//if err != nil {
+	//	c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error validating league: %v", err)})
+	//	return
+	//}
+
+	//query := ``
+}
+
+func (h *Handler) getPlayersByLeagueId(c *gin.Context) {}

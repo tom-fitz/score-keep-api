@@ -4,8 +4,7 @@ import { redirect } from 'next/navigation';
 
 export function getLeagues(): Promise<League[]>{
     try {
-        const api = 'http://localhost:4000/v1/league';
-        return axios.get(api).then((response) => response.data.leagues);
+        return axios.get('http://localhost:4000/v1/league').then((response) => response.data.leagues);
     } catch(error) {
         throw error;
     }
