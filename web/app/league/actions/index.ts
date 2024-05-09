@@ -1,4 +1,4 @@
-import { League } from '@/app/lib/definitions';
+import { League, Player, Team } from '@/app/lib/definitions';
 import axios from 'axios';
 import { redirect } from 'next/navigation';
 
@@ -75,6 +75,22 @@ export function importPlayers(file: File): Promise<void> {
             console.error('Error importing players:', error);
             throw error;
         });
+    } catch (error) {
+        throw error;
+    }
+}
+
+export function getTeamsByLeagueId(lid: number): Promise<Team[]>{
+    try {
+        return axios.get(`http://localhost:4000/v1/league/${lid}/teams`).then((response) => response.data.teams)
+    } catch (error) {
+        throw error;
+    }
+}
+
+export function getPlayersByLeagueId(lid: number): Promise<Player[]>{
+    try {
+        return axios.get(`http://localhost:4000/v1/league/${lid}/players`).then((response) => response.data.players)
     } catch (error) {
         throw error;
     }
