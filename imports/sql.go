@@ -75,15 +75,17 @@ func InsertPlayerData(db *sql.DB, players []Player) error {
 		insertTeamQuery := `
      INSERT INTO score_keep_db.public.player_team (usanum, team_name, team_id)
      VALUES($1, $2, $3)
-     ON CONFLICT (usanum, team_id, team_name) DO NOTHING
+     ON CONFLICT (usanum, team_id) DO NOTHING
 `
 		for _, team := range teams {
+			fmt.Printf("team name: %s\n", team)
 			var teamId int
 			getTeamIdQuery := `SELECT id FROM teams WHERE name = $1`
 			err := db.QueryRow(getTeamIdQuery, team).Scan(&teamId)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					// Team doesn't exist in the teams table, skip inserting the relationship
+					fmt.Printf("team name not found: %s\n", team)
 					continue
 				}
 				return fmt.Errorf("error finding team id from teams table: %w", err)
@@ -93,45 +95,7 @@ func InsertPlayerData(db *sql.DB, players []Player) error {
 			if err != nil {
 				return fmt.Errorf("error inserting player-team relationship: %w", err)
 			}
-		} //		// Insert player-team relationships
-		//		teams := strings.Split(teamNames, ", ")
-		//		insertTeamQuery := `
-		//     INSERT INTO score_keep_db.public.player_team (usanum, team_name, team_id)
-		//     VALUES($1, $2, $3)
-		//`
-		//		for _, team := range teams {
-		//			var teamId int
-		//			getTeamIdQuery := `SELECT id FROM teams WHERE name = $1`
-		//			err := db.QueryRow(getTeamIdQuery, team).Scan(&teamId)
-		//			if err != nil {
-		//				if err == sql.ErrNoRows {
-		//					// Team doesn't exist in the teams table, skip inserting the relationship
-		//					continue
-		//				}
-		//				return fmt.Errorf("error finding team id from teams table: %w", err)
-		//			}
-		//
-		//			// Check if the player-team relationship already exists
-		//			checkRelationshipQuery := `
-		//        SELECT COUNT(*) FROM score_keep_db.public.player_team
-		//        WHERE usanum = $1 AND team_id = $2
-		//   `
-		//			var count int
-		//			err = db.QueryRow(checkRelationshipQuery, usaNum, teamId).Scan(&count)
-		//			if err != nil {
-		//				return fmt.Errorf("error checking player-team relationship: %w", err)
-		//			}
-		//
-		//			if count > 0 {
-		//				// Player-team relationship already exists, skip insertion
-		//				continue
-		//			}
-		//
-		//			_, err = db.Exec(insertTeamQuery, usaNum, team, teamId)
-		//			if err != nil {
-		//				return fmt.Errorf("error inserting player-team relationship: %w", err)
-		//			}
-		//		}
+		}
 	}
 	return nil
 }

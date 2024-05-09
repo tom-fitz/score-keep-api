@@ -25,3 +25,58 @@ export function redirectUser(url: string) {
         throw error;
     }
 }
+
+export function importTeams(file: File): Promise<void> {
+    try {
+        const formData = new FormData();
+        formData.append('teams', file, 'teams.csv');
+
+        return fetch('http://localhost:4000/v1/league/1/teams/import', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to import teams');
+            }
+            return response.json();
+        })
+        .then(result => {
+            console.log(result);
+        })
+        .catch(error => {
+            console.error('Error importing teams:', error);
+            throw error;
+        });
+    } catch (error) {
+        throw error;
+    }
+}
+
+export function importPlayers(file: File): Promise<void> {
+    try {
+        const formData = new FormData();
+        formData.append('players', file, 'players.csv');
+
+        return fetch('http://localhost:4000/v1/league/1/players/import', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to import players');
+            }
+            return response.json();
+        })
+        .then(result => {
+            console.log(result);
+        })
+        .catch(error => {
+            console.error('Error importing players:', error);
+            throw error;
+        });
+    } catch (error) {
+        throw error;
+    }
+}
+

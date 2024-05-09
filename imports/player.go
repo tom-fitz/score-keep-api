@@ -45,6 +45,8 @@ func (h *Service) ImportPlayers(c *gin.Context) {
 		return
 	}
 
+	h.logger.Printf("parsedPlayers: %v", players)
+
 	if err := InsertPlayerData(h.db, players); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("InsertPlayerData: %v", err)})
 		return

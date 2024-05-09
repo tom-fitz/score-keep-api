@@ -2,6 +2,7 @@
 import { League, Team, Player } from "@/app/lib/definitions";
 import { useState } from 'react';
 import Papa from 'papaparse';
+import { importPlayers, importTeams } from "../actions";
 
 type LeagueDetailViewProps = {
   league: League;
@@ -19,13 +20,14 @@ export default function LeagueDetailView({ league, teams, players }: LeagueDetai
       Papa.parse(file, {
         header: true,
         complete: (results) => {
-          const newTeams: Team[] = results.data.map((row, index) => ({
+          const newTeams: Team[] = results.data.map((row: any, index) => ({
             id: index + 1,
             name: row.name,
             captain: row.captain,
             firstYear: row.firstYear,
           }));
           setUploadedTeams(newTeams);
+          importTeams(file)
         },
       });
     }
@@ -37,7 +39,7 @@ export default function LeagueDetailView({ league, teams, players }: LeagueDetai
       Papa.parse(file, {
         header: true,
         complete: (results) => {
-          const newPlayers: Player[] = results.data.map((row, index) => ({
+          const newPlayers: Player[] = results.data.map((row: any, index) => ({
             id: index + 1,
             firstName: row.firstName,
             lastName: row.lastName,
@@ -47,6 +49,7 @@ export default function LeagueDetailView({ league, teams, players }: LeagueDetai
             level: row.level,
           }));
           setUploadedPlayers(newPlayers);
+          importPlayers(file)
         },
       });
     }
