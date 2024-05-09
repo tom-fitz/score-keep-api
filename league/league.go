@@ -25,7 +25,6 @@ type TeamInfo struct {
 
 func (h *Handler) createLeagues(c *gin.Context) {
 	var requestBody []map[string]interface{}
-
 	err := c.BindJSON(&requestBody)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON data"})
@@ -45,6 +44,36 @@ func (h *Handler) createLeagues(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"ids": ids})
+}
+
+func (h *Handler) updateLeague(c *gin.Context) {
+	lid := c.Param("id")
+	if lid == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "league id required"})
+		return
+	}
+	var requestBody League
+	err := c.BindJSON(&requestBody)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON data"})
+		return
+	}
+	league, err := validateLeague(lid, h.db)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error validating league: %v", err)})
+		return
+	}
+	league.Name = requestBody.Name
+	league.Level = requestBody.Level
+
+	query := `UPDATE score_keep_db.public.leagues SET name = $1, level = $2 WHERE id = $3`
+
+	if err = h.db.QueryRow(query, league.Name, league.Level, league.Id).Scan(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating league in the database"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "League updated successfully"})
 }
 
 func (h *Handler) getLeagues(c *gin.Context) {
@@ -136,13 +165,13 @@ func (h *Handler) getTeamsByLeagueId(c *gin.Context) {
 type PlayerInfo struct {
 	ID        int    `json:"id"`
 	Email     string `json:"email"`
-	FirstName string `json:"firstname"`
-	LastName  string `json:"lastname"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 	Level     int    `json:"level"`
 	Phone     string `json:"phone"`
 	Usanum    string `json:"usanum"`
-	TeamName  string `json:"team_name"`
-	TeamID    int    `json:"team_id"`
+	TeamName  string `json:"teamName"`
+	TeamID    int    `json:"teamId"`
 }
 
 func (h *Handler) getPlayersByLeagueId(c *gin.Context) {

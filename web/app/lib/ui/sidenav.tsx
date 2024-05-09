@@ -6,7 +6,7 @@ import NavLinks from '@/app/lib/ui/nav-links';
 
 export default function SideNav() {
   return (
-    <div className="flex h-full flex-col bg-base-300">
+    <div className="flex h-full flex-col bg-base-300 p-4">
       <div className="p-2 flex grow flex-row md:flex-col md:space-x-0 md:space-y-2">
         <div className="ma-2">
           <NavLinks />

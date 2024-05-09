@@ -20,3 +20,8 @@ export type Player = {
     phone: string,
     usanum: string
 }
+
+export type PlayerDisplay = Player & {
+    teamName: string,
+    teamId: number
+}

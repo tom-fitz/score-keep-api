@@ -1,4 +1,4 @@
-import { League, Player, Team } from '@/app/lib/definitions';
+import { League, Player, PlayerDisplay, Team } from '@/app/lib/definitions';
 import axios from 'axios';
 import { redirect } from 'next/navigation';
 
@@ -6,6 +6,16 @@ export function getLeagues(): Promise<League[]>{
     try {
         return axios.get('http://localhost:4000/v1/league').then((response) => response.data.leagues);
     } catch(error) {
+        throw error;
+    }
+}
+
+export function updateLeague(lid: number, updatedLeague: League): Promise<void> {
+    try {
+        return axios.post(`http://localhost:4000/v1/league/${lid}/update`, {
+            body: updatedLeague,
+        })
+    } catch (error) {
         throw error;
     }
 }
@@ -88,7 +98,7 @@ export function getTeamsByLeagueId(lid: number): Promise<Team[]>{
     }
 }
 
-export function getPlayersByLeagueId(lid: number): Promise<Player[]>{
+export function getPlayersByLeagueId(lid: number): Promise<PlayerDisplay[]>{
     try {
         return axios.get(`http://localhost:4000/v1/league/${lid}/players`).then((response) => response.data.players)
     } catch (error) {
