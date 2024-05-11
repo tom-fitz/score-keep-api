@@ -17,9 +17,7 @@ export default function LeagueDetailView({ league, teams, players }: LeagueDetai
   const [uploadedPlayers, setUploadedPlayers] = useState<Player[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
-  console.log("players: ", players)
-
+  
   const handleTeamUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {

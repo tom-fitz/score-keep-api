@@ -10,9 +10,9 @@ export function getLeagues(): Promise<League[]>{
     }
 }
 
-export function updateLeague(lid: number, updatedLeague: League): Promise<void> {
+export function updateLeague(updatedLeague: League): Promise<void> {
     try {
-        return axios.post(`http://localhost:4000/v1/league/${lid}/update`, {
+        return axios.post(`http://localhost:4000/v1/league/${updatedLeague.id}/update`, {
             body: updatedLeague,
         })
     } catch (error) {

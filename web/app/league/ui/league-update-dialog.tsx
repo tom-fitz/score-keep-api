@@ -1,6 +1,7 @@
 'use client'
 
 import { League } from '@/app/lib/definitions';
+import { updateLeague } from '../actions';
 
 type LeagueEditDialogProps = {
   isOpen: boolean;
@@ -11,7 +12,9 @@ type LeagueEditDialogProps = {
 export default function LeagueEditDialog({ isOpen, onClose, league }: LeagueEditDialogProps) {
   const handleSave = () => {
     // Handle saving the edited league details
-    onClose();
+    // updateLeague(league)
+    console.log(league)
+    // onClose();
   };
 
   return (
